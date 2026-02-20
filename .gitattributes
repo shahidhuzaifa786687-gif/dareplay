@@ -1,0 +1,13 @@
+# Normalize line endings to avoid CRLF/LF warnings
+* text=auto
+
+# Force LF for scripts and Python files
+*.py text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+
+# Keep binary files unchanged
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary

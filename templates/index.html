@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>DarePlay - Play Bold. No Escape.</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #1e1e2f, #2c2c54);
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .card {
+            background: #2f2f4f;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+
+        h1 {
+            margin-bottom: 5px;
+        }
+
+        .tagline {
+            font-size: 14px;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .easy { background: #27ae60; color: white; }
+        .adult { background: #c0392b; color: white; }
+        .truth { background: #2980b9; color: white; }
+        .dare { background: #8e44ad; color: white; }
+
+        button:hover {
+            opacity: 0.85;
+        }
+
+        .question-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #44446a;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>DarePlay</h1>
+    <div class="tagline">Play Bold. No Escape.</div>
+
+    <!-- difficulty and choice buttons; JS will handle clicks -->
+    <div id="controls">
+        <button class="kids" data-difficulty="kids">Kids Mode</button>
+        <button class="adult" data-difficulty="adult">Adult Mode</button>
+
+        <button class="truth" data-choice="truth">Truth</button>
+        <button class="dare" data-choice="dare">Dare</button>
+    </div>
+
+    <div id="question-container" class="question-box" style="display: none;"></div>
+
+    <!-- optional server-render fallback -->
+    {% if question %}
+    <div class="question-box">
+        {{ question }}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    // track current selections
+    let selectedDifficulty = "kids";
+    let selectedChoice = "truth";
+
+    const difficultyButtons = document.querySelectorAll("button[data-difficulty]");
+    const choiceButtons = document.querySelectorAll("button[data-choice]");
+    const questionContainer = document.getElementById("question-container");
+
+    function fetchQuestion() {
+        const params = new URLSearchParams({
+            difficulty: selectedDifficulty,
+            choice: selectedChoice
+        });
+        fetch(`/api/question?${params.toString()}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.question) {
+                    questionContainer.textContent = data.question;
+                    questionContainer.style.display = "block";
+                } else if (data.error) {
+                    questionContainer.textContent = data.error;
+                    questionContainer.style.display = "block";
+                }
+            })
+            .catch(err => {
+                questionContainer.textContent = "Error fetching question.";
+                questionContainer.style.display = "block";
+            });
+    }
+
+    difficultyButtons.forEach(btn => {
+        btn.addEventListener("click", e => {
+            selectedDifficulty = e.currentTarget.dataset.difficulty;
+            // visually highlight selection
+            difficultyButtons.forEach(b => b.style.opacity = "0.6");
+            e.currentTarget.style.opacity = "1";
+        });
+    });
+
+    choiceButtons.forEach(btn => {
+        btn.addEventListener("click", e => {
+            selectedChoice = e.currentTarget.dataset.choice;
+            // highlight
+            choiceButtons.forEach(b => b.style.opacity = "0.6");
+            e.currentTarget.style.opacity = "1";
+            // once a choice is made, fetch a question
+            fetchQuestion();
+        });
+    });
+
+    // initialize highlights
+    difficultyButtons.forEach(b => {
+        if (b.dataset.difficulty === selectedDifficulty) b.style.opacity = "1";
+        else b.style.opacity = "0.6";
+    });
+    choiceButtons.forEach(b => {
+        if (b.dataset.choice === selectedChoice) b.style.opacity = "1";
+        else b.style.opacity = "0.6";
+    });
+</script>
+
+</body>
+</html>
