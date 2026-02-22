@@ -61,6 +61,13 @@
             background: #44446a;
             border-radius: 10px;
         }
+        #player-inputs input {
+            width: 90%;
+            padding: 8px;
+            margin: 4px 0;
+            border-radius: 6px;
+            border: none;
+        }
     </style>
 </head>
 <body>
@@ -69,8 +76,26 @@
     <h1>DarePlay</h1>
     <div class="tagline">Play Bold. No Escape.</div>
 
-    <!-- difficulty and choice buttons; JS will handle clicks -->
-    <div id="controls">
+    <!-- player count selection, shown first -->
+    <div id="player-count-section" class="question-box">
+        <h2>Number of Players</h2>
+        <p>Select how many people are playing:</p>
+        <button class="count-btn" data-count="2">2 Players</button>
+        <button class="count-btn" data-count="3">3 Players</button>
+        <button class="count-btn" data-count="4">4 Players</button>
+    </div>
+
+    <!-- player names; hidden until count chosen -->
+    <div id="player-section" class="question-box" style="display:none;">
+        <h2>Players</h2>
+        <p>Enter names:</p>
+        <div id="player-inputs"></div>
+        <button id="pick-player" style="margin-top:10px;">Pick Random Player</button>
+        <div id="selected-player" style="margin-top:10px; font-weight:bold;"></div>
+    </div>
+
+    <!-- difficulty and choice buttons; JS will handle clicks, hidden until player picked -->
+    <div id="controls" style="display:none;">
         <button class="kids" data-difficulty="kids">Kids Mode</button>
         <button class="adult" data-difficulty="adult">Adult Mode</button>
 
@@ -96,6 +121,30 @@
     const difficultyButtons = document.querySelectorAll("button[data-difficulty]");
     const choiceButtons = document.querySelectorAll("button[data-choice]");
     const questionContainer = document.getElementById("question-container");
+
+    // player flow elements
+    const countButtons = document.querySelectorAll(".count-btn");
+    const playerCountSection = document.getElementById("player-count-section");
+    const playerSection = document.getElementById("player-section");
+    const controlsSection = document.getElementById("controls");
+
+    // when a count is chosen, show that many name inputs
+    countButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const count = parseInt(btn.dataset.count, 10);
+            const inputsDiv = document.getElementById('player-inputs');
+            inputsDiv.innerHTML = '';
+            for (let i = 1; i <= count; i++) {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.placeholder = `Player ${i}`;
+                inputsDiv.appendChild(input);
+                inputsDiv.appendChild(document.createElement('br'));
+            }
+            playerCountSection.style.display = 'none';
+            playerSection.style.display = 'block';
+        });
+    });
 
     function fetchQuestion() {
         const params = new URLSearchParams({
@@ -147,6 +196,36 @@
     choiceButtons.forEach(b => {
         if (b.dataset.choice === selectedChoice) b.style.opacity = "1";
         else b.style.opacity = "0.6";
+    });
+
+    // player selection logic
+    const pickBtn = document.getElementById('pick-player');
+    const selectedDiv = document.getElementById('selected-player');
+    pickBtn.addEventListener('click', () => {
+        const inputs = document.querySelectorAll('#player-inputs input');
+        const names = Array.from(inputs).map(i => i.value.trim()).filter(v => v);
+        if (names.length < 2 || names.length > 4) {
+            selectedDiv.textContent = 'Please enter between 2 and 4 names.';
+            return;
+        }
+        fetch('/api/players', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ names })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.selected) {
+                selectedDiv.textContent = 'Selected: ' + data.selected;
+                // show game controls once a player has been picked
+                controlsSection.style.display = 'block';
+            } else if (data.error) {
+                selectedDiv.textContent = data.error;
+            }
+        })
+        .catch(err => {
+            selectedDiv.textContent = 'Error selecting player.';
+        });
     });
 </script>
 
