@@ -112,3 +112,10 @@ if __name__ == "__main__":
     # when running directly, enable debug only if FLASK_ENV=development
     debug_mode = app.config.get("DEBUG", False)
     app.run(debug=debug_mode, host="0.0.0.0", port=5000)
+    @app.route("/privacy")
+    def privacy():
+     return render_template("privacy.html")
+
+    @app.route("/terms")
+    def terms():
+     return render_template("terms.html")
